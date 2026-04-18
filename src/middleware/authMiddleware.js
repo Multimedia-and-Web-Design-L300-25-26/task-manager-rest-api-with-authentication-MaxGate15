@@ -10,7 +10,27 @@ import User from "../models/User.js";
 // 6. If invalid → return 401
 
 const authMiddleware = async (req, res, next) => {
-  //  implement here
+  try {
+    const authHeader = req.headers.authorization || "";
+    const [scheme, token] = authHeader.split(" ");
+
+    if (scheme !== "Bearer" || !token) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const secret = process.env.JWT_SECRET || "dev_secret";
+    const decoded = jwt.verify(token, secret);
+
+    const user = await User.findById(decoded.id);
+    if (!user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    req.user = user;
+    next();
+  } catch (error) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
 };
 
 export default authMiddleware;
